@@ -1,0 +1,321 @@
+openapi: 3.0.3
+info:
+  title: GetInstaShop Ecommerce API
+  version: "1.0"
+  description: |
+    InstaShop is a social commerce platform aimed at empowering vendors and buyers with a streamlined e-commerce experience. 
+    The API provides functionalities for user registration, product management, and order processing.
+
+    **Key Features:**
+    - Product, Inventory, and User Management
+    - Order Processing and Tracking
+    - Secure JWT Authentication
+
+servers:
+  - url: http://localhost:8080
+    description: Development server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    RegisterInput:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+        password:
+          type: string
+          format: password
+          minLength: 6
+          example: "password123"
+      required:
+        - email
+        - password
+
+    LoginInput:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+        password:
+          type: string
+          format: password
+          example: "password123"
+      required:
+        - email
+        - password
+
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "Sample Product"
+        description:
+          type: string
+          example: "A description of the product."
+        price:
+          type: number
+          format: float
+          example: 29.99
+        quantity:
+          type: integer
+          example: 100
+      required:
+        - name
+        - description
+        - price
+        - quantity
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 101
+        user_id:
+          type: integer
+          example: 1
+        product_id:
+          type: integer
+          example: 1
+        quantity:
+          type: integer
+          example: 2
+      required:
+        - user_id
+        - product_id
+        - quantity
+
+paths:
+  /auth/register:
+    post:
+      summary: Register a new user
+      description: Registers a new user with email and password.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterInput'
+      responses:
+        201:
+          description: User registered successfully
+        400:
+          description: Invalid input data
+        409:
+          description: User already exists
+
+  /auth/login:
+    post:
+      summary: Login a user
+      description: Authenticates a user and returns a JWT token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginInput'
+      responses:
+        200:
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        400:
+          description: Invalid input data
+        401:
+          description: Authentication failed
+
+  /products:
+    get:
+      summary: Get all products
+      description: Retrieves a list of all available products.
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: List of products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+
+    post:
+      summary: Create a new product
+      description: Adds a new product to the store (admin only).
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Product'
+      responses:
+        201:
+          description: Product created successfully
+        400:
+          description: Invalid product data
+        401:
+          description: Unauthorized access
+
+  /products/{id}:
+    get:
+      summary: Get a specific product
+      description: Retrieves details of a product by ID.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID of the product to retrieve
+      responses:
+        200:
+          description: Product details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        404:
+          description: Product not found
+
+    put:
+      summary: Update a product
+      description: Updates details of a product by ID (admin only).
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID of the product to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Product'
+      responses:
+        200:
+          description: Product updated successfully
+        400:
+          description: Invalid product data
+        404:
+          description: Product not found
+
+    delete:
+      summary: Delete a product
+      description: Removes a product by ID (admin only).
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID of the product to delete
+      responses:
+        200:
+          description: Product deleted successfully
+        404:
+          description: Product not found
+
+  /orders:
+    post:
+      summary: Place an order
+      description: Places an order for one or more products.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Order'
+      responses:
+        201:
+          description: Order placed successfully
+        400:
+          description: Invalid order data
+        401:
+          description: Unauthorized access
+
+    get:
+      summary: Get all orders
+      description: Retrieves a list of all orders (admin only).
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: List of orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+
+  /orders/{id}:
+    get:
+      summary: Get a specific order
+      description: Retrieves details of a specific order by ID.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID of the order to retrieve
+      responses:
+        200:
+          description: Order details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        404:
+          description: Order not found
+
+    delete:
+      summary: Cancel an order
+      description: Cancels an order by ID.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID of the order to cancel
+      responses:
+        200:
+          description: Order canceled successfully
+        404:
+          description: Order not found
